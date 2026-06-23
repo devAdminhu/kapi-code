@@ -1,22 +1,50 @@
 {
   "name": "kapi-code",
   "version": "0.0.1",
-  "private": true,
   "type": "module",
-  "description": "Kapi Code — agente de IA no terminal multi-modelo, falando com os LLMs da Azure",
+  "description": "Agente de IA no terminal — multi-provider (Azure, Anthropic, GLM, OpenAI, Gemini, OpenRouter, Groq), modo agente com ferramentas, enxame multi-agente, paste de imagem e menção de arquivo",
+  "license": "MIT",
+  "author": "devAdminhu",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devAdminhu/kapi-code.git"
+  },
+  "homepage": "https://github.com/devAdminhu/kapi-code#readme",
+  "keywords": [
+    "ai",
+    "agent",
+    "tui",
+    "terminal",
+    "cli",
+    "llm",
+    "anthropic",
+    "openai",
+    "gemini",
+    "ink"
+  ],
   "bin": {
     "kapi": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "KAPI.md"
+  ],
+  "engines": {
+    "node": ">=18"
   },
   "scripts": {
     "dev": "tsx src/index.tsx",
     "build": "tsc",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build",
+    "release": "npm run build && npm version patch && npm publish && git push --follow-tags"
   },
   "dependencies": {
-    "@types/figlet": "1.7.0",
     "chalk": "^5.6.2",
-    "figlet": "1.11.0",
     "ink": "^6.0.1",
     "react": "^19.1.0"
   },
