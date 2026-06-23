@@ -1,6 +1,6 @@
 {
   "name": "kapi-code",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "description": "Agente de IA no terminal — multi-provider (Azure, Anthropic, GLM, OpenAI, Gemini, OpenRouter, Groq), modo agente com ferramentas, enxame multi-agente, paste de imagem e menção de arquivo",
   "license": "MIT",
