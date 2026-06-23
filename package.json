@@ -30,7 +30,7 @@
     "dist",
     "bin",
     "README.md",
-    "KAPI.md"
+    "KAPI.example.md"
   ],
   "engines": {
     "node": ">=18"

@@ -7,8 +7,7 @@ dist
 jarvis-gasto.json
 .DS_Store
 *.log
-
-# lixo / projetos a parte
 teste_kapi.txt
 pinball/
 swarm-venv/
+KAPI.md
