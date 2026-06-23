@@ -119,4 +119,4 @@ Conexão por provider via `/login`. Imagem (Ctrl+V) só em modelos com visão.
 
 ---
 
-`v0.0.1  made with ♥ devAdminhu`
+Feito por um brasileiro apaixonado por programação. `devAdminhu ♥`
