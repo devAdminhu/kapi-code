@@ -23,19 +23,23 @@ export const MODELS: ModelInfo[] = [
   { alias: 'grok', deployment: 'grok-4-20-reasoning', provider: 'azure', inPrice: 3.0, outPrice: 15.0, ctxLimit: 256_000, note: 'melhor raciocínio, default agente' },
   { alias: 'o4', deployment: 'o4-mini', provider: 'azure', inPrice: 1.21, outPrice: 2.2, ctxLimit: 200_000, note: 'reasoning OpenAI' },
   // z.ai (GLM) — key do João
-  { alias: 'glm', deployment: 'glm-5.2', provider: 'zai', inPrice: 0.6, outPrice: 2.2, ctxLimit: 200_000, note: 'GLM-5.2, coding' },
-  { alias: 'glm-air', deployment: 'glm-4.7', provider: 'zai', inPrice: 0.2, outPrice: 1.1, ctxLimit: 200_000, note: 'GLM mais leve' },
+  { alias: 'glm', deployment: 'glm-5.1', provider: 'zai', inPrice: 0.6, outPrice: 2.2, ctxLimit: 200_000, note: 'GLM-5.1, coding' },
+  { alias: 'glm5', deployment: 'glm-5', provider: 'zai', inPrice: 0.6, outPrice: 2.2, ctxLimit: 200_000, note: 'GLM-5' },
+  { alias: 'glm-air', deployment: 'glm-4.6', provider: 'zai', inPrice: 0.2, outPrice: 1.1, ctxLimit: 200_000, note: 'GLM-4.6' },
   // Anthropic (key ou OAuth Claude Pro/Max)
   { alias: 'opus', deployment: 'claude-opus-4-8', provider: 'anthropic', inPrice: 5.0, outPrice: 25.0, ctxLimit: 1_000_000, note: 'Claude Opus 4.8' },
   { alias: 'opus47', deployment: 'claude-opus-4-7', provider: 'anthropic', inPrice: 5.0, outPrice: 25.0, ctxLimit: 1_000_000, note: 'Claude Opus 4.7' },
+  { alias: 'opus46', deployment: 'claude-opus-4-6', provider: 'anthropic', inPrice: 5.0, outPrice: 25.0, ctxLimit: 1_000_000, note: 'Claude Opus 4.6' },
   { alias: 'opus45', deployment: 'claude-opus-4-5', provider: 'anthropic', inPrice: 5.0, outPrice: 25.0, ctxLimit: 1_000_000, note: 'Claude Opus 4.5' },
   { alias: 'sonnet', deployment: 'claude-sonnet-4-6', provider: 'anthropic', inPrice: 3.0, outPrice: 15.0, ctxLimit: 1_000_000, note: 'Claude Sonnet 4.6' },
   { alias: 'haiku', deployment: 'claude-haiku-4-5', provider: 'anthropic', inPrice: 1.0, outPrice: 5.0, ctxLimit: 200_000, note: 'Claude Haiku 4.5, rápido' },
   // OpenAI
-  { alias: 'gpt', deployment: 'gpt-5.4', provider: 'openai', inPrice: 2.5, outPrice: 15.0, ctxLimit: 1_050_000, note: 'GPT-5.4' },
+  { alias: 'gpt', deployment: 'gpt-5.5', provider: 'openai', inPrice: 2.5, outPrice: 15.0, ctxLimit: 1_050_000, note: 'GPT-5.5' },
+  { alias: 'gpt54', deployment: 'gpt-5.4', provider: 'openai', inPrice: 2.5, outPrice: 15.0, ctxLimit: 1_050_000, note: 'GPT-5.4' },
   { alias: 'gpt-mini', deployment: 'gpt-5.2', provider: 'openai', inPrice: 1.75, outPrice: 14.0, ctxLimit: 400_000, note: 'GPT-5.2' },
   // Google Gemini (key ou OAuth)
-  { alias: 'gemini', deployment: 'gemini-3-flash-preview', provider: 'google', inPrice: 0.5, outPrice: 3.0, ctxLimit: 1_000_000, note: 'Gemini 3.0 Flash' },
+  { alias: 'gemini', deployment: 'gemini-3.1-pro', provider: 'google', inPrice: 1.25, outPrice: 10.0, ctxLimit: 1_050_000, note: 'Gemini 3.1 Pro' },
+  { alias: 'gemini-flash', deployment: 'gemini-3-flash-preview', provider: 'google', inPrice: 0.5, outPrice: 3.0, ctxLimit: 1_000_000, note: 'Gemini 3 Flash' },
   { alias: 'gemini-pro', deployment: 'gemini-2.5-pro', provider: 'google', inPrice: 1.25, outPrice: 10.0, ctxLimit: 1_050_000, note: 'Gemini 2.5 Pro' },
   // Groq (rápido)
   { alias: 'groq', deployment: 'moonshotai/kimi-k2-instruct', provider: 'groq', inPrice: 1.0, outPrice: 3.0, ctxLimit: 256_000, note: 'Groq, baixa latência' },
@@ -45,8 +49,33 @@ export const MODELS: ModelInfo[] = [
 
 export const DEFAULT_ALIAS = 'grok' // melhor pra agente
 
-const byAlias = new Map(MODELS.map(m => [m.alias, m]))
-const byDeployment = new Map(MODELS.map(m => [m.deployment, m]))
+let byAlias = new Map(MODELS.map(m => [m.alias, m]))
+let byDeployment = new Map(MODELS.map(m => [m.deployment, m]))
+
+const rebuildIndex = (): void => {
+  byAlias = new Map(MODELS.map(m => [m.alias, m]))
+  byDeployment = new Map(MODELS.map(m => [m.deployment, m]))
+}
+
+/**
+ * Registra modelos vindos da API do provider (descoberta dinâmica). Dedup por
+ * deployment: modelos já no catálogo estático (com preço curado) têm prioridade.
+ * Retorna quantos modelos novos entraram.
+ */
+export const registerModels = (infos: ModelInfo[]): number => {
+  let added = 0
+  for (const m of infos) {
+    if (byDeployment.has(m.deployment)) continue
+    // evita colisão de alias com um já existente
+    if (byAlias.has(m.alias)) m.alias = m.deployment
+    MODELS.push(m)
+    byDeployment.set(m.deployment, m)
+    byAlias.set(m.alias, m)
+    added += 1
+  }
+  if (added) rebuildIndex()
+  return added
+}
 
 export const aliasOf = (deployment: string): string =>
   byDeployment.get(deployment)?.alias ?? deployment

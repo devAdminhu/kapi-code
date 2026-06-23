@@ -7,11 +7,11 @@ token a token, modo agente com ferramentas reais, enxame multi-agente, compacta�
 contexto, memória persistente, paste de imagem (Ctrl+V) e menção de arquivo com `@`.
 
 ```
-     ██  █████  ██████  ██    ██ ██ ███████
-     ██ ██   ██ ██   ██ ██    ██ ██ ██
-     ██ ███████ ██████  ██    ██ ██ ███████
-██   ██ ██   ██ ██   ██  ██  ██  ██      ██
- █████  ██   ██ ██   ██   ████   ██ ███████
+██   ██  █████  ██████  ██
+██  ██  ██   ██ ██   ██ ██
+█████   ███████ ██████  ██
+██  ██  ██   ██ ██      ██
+██   ██ ██   ██ ██      ██
 ```
 
 ## Rodar
@@ -23,14 +23,14 @@ npm run dev          # abre a TUI
 kapi
 ```
 
-A chave da Azure vem da env var `KAPI_DEEPSEEK_KEY` ou de `~/kapi-tui/.azure-ref.env`
-(gitignored). Veja `.env.example`.
+A chave da Azure vem da env var `KAPI_API_KEY` ou de `~/kapi-code/.azure-ref.env`
+(gitignored). Veja `.env.example`. Outros providers conectam via `/login`.
 
 ## Instalar como comando
 
 ```bash
 npm run build
-ln -sf ~/kapi-tui/bin/kapi ~/.local/bin/kapi   # 'kapi' no PATH
+ln -sf ~/kapi-code/bin/kapi ~/.local/bin/kapi   # 'kapi' no PATH
 kapi --help
 ```
 
@@ -38,11 +38,11 @@ kapi --help
 
 ### Conversa & modelos
 - **Streaming** token a token, com bloco de raciocínio (reasoning) dos modelos que pensam
-- **Multi-provider**: troca de modelo na hora entre Azure, Anthropic, GLM, OpenAI, Gemini, OpenRouter, Groq
-- **Login por provider** via `/login`: API key ou OAuth (Anthropic Claude Pro/Max, OpenAI/codex)
-- **Paste de imagem** (Ctrl+V): pega do clipboard, salva em cache e manda pros modelos com visão
-- **Menção de arquivo** com `@`: busca fuzzy instantânea (git ls-files) e insere o caminho
-- **Janela de contexto dinâmica** (buscada do OpenRouter, cacheada) na statusline
+- **Multi-provider**: Azure, Anthropic, GLM, OpenAI, Gemini, OpenRouter, Groq
+- **Login por provider** (`/login`): API key ou OAuth
+- **Paste de imagem** com Ctrl+V
+- **Menção de arquivo** com `@`
+- **Janela de contexto dinâmica** na statusline
 - **Tracking de custo** por resposta + acumulado + cota Azure
 
 ### Modo agente (ferramentas reais)
@@ -66,8 +66,8 @@ Use `/enxame <objetivo>` ou o agente aciona sozinho.
 - **Cache robusto** em disco: envelope versionado, escrita atômica, stale-while-revalidate
 
 ### KAPI.md & memória
-- Lê `~/.kapi/KAPI.md` (global) + `KAPI.md`/`AGENTS.md` do projeto, injeta no system prompt
-- Memória persistente em `~/.kapi/memory.md` (tool `lembrar` ou `/lembrar`)
+- Lê `~/.kapi-code/KAPI.md` (global) + `KAPI.md`/`AGENTS.md` do projeto, injeta no system prompt
+- Memória persistente em `~/.kapi-code/memory.md` (tool `lembrar` ou `/lembrar`)
 - System prompt godmode: autônomo, ambiente injetado dinamicamente, genérico
 
 ### Plan mode
@@ -116,8 +116,7 @@ kapi -p --chat "oi"                    # sem ferramentas
 | gpt / gpt-mini | gpt-5.4 / gpt-5.2 | openai | 2.50 / 1.75 | 15.00 / 14.00 |
 | gemini / gemini-pro | gemini-3-flash / 2.5-pro | google | 0.50 / 1.25 | 3.00 / 10.00 |
 
-Conexão por provider via `/login` (API key ou OAuth). Modelos com visão (Opus/Sonnet/Haiku, GLM,
-Gemini, GPT) aceitam imagem via Ctrl+V.
+Conexão por provider via `/login`. Imagem (Ctrl+V) só em modelos com visão.
 
 ## Build
 

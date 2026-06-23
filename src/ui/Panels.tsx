@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Box, Text, useInput } from 'ink'
 import { theme } from '../theme.js'
 import { MODELS, aliasOf } from '../models.js'
@@ -17,20 +17,22 @@ export const ModelsPanel = ({
   onSelect: (deployment: string) => void
   onClose: () => void
 }) => {
-  const [sel, setSel] = useState(() =>
-    Math.max(0, MODELS.findIndex(m => m.deployment === current)),
+  // agrupa por provider e ordena por apelido — fica claro de quem é cada modelo
+  const list = useMemo(
+    () => [...MODELS].sort((a, b) => a.provider.localeCompare(b.provider) || a.alias.localeCompare(b.alias)),
+    [],
   )
+  const [sel, setSel] = useState(() => Math.max(0, list.findIndex(m => m.deployment === current)))
   const { cols } = useTermSize()
   // responsivo: derruba colunas menos importantes em terminal estreito
-  const showDeployment = cols >= 88
-  const showNote = cols >= 70
-  const showPrice = cols >= 52
+  const showNote = cols >= 78 // coluna do apelido (/handle)
+  const showPrice = cols >= 60
 
   useInput((input, key) => {
-    if (key.upArrow) return setSel(s => (s - 1 + MODELS.length) % MODELS.length)
-    if (key.downArrow) return setSel(s => (s + 1) % MODELS.length)
+    if (key.upArrow) return setSel(s => (s - 1 + list.length) % list.length)
+    if (key.downArrow) return setSel(s => (s + 1) % list.length)
     if (key.return) {
-      const m = MODELS[sel]
+      const m = list[sel]
       if (m) onSelect(m.deployment)
       return
     }
@@ -49,32 +51,35 @@ export const ModelsPanel = ({
         modelos disponíveis (preço $/1M tokens)
       </Text>
       <Box marginTop={1} flexDirection="column">
-        {MODELS.map((m, i) => {
+        {list.map((m, i) => {
           const active = m.deployment === current
           const focused = i === sel
           const on = isConnected(m.provider)
+          const priced = m.inPrice > 0 || m.outPrice > 0
           return (
-            <Box key={m.alias}>
+            <Box key={`${m.provider}:${m.deployment}`}>
               <Text color={focused ? theme.accent : theme.dim}>{focused ? '› ' : '  '}</Text>
               <Text color={on ? theme.success : theme.subtle}>{on ? '● ' : '○ '}</Text>
-              <Box width={11}>
-                <Text bold color={focused ? theme.accent : active ? theme.kapi : on ? theme.text : theme.subtle} inverse={focused}>
-                  {m.alias}
+              {/* nome REAL do modelo (deployment) em destaque */}
+              <Box width={24}>
+                <Text bold color={focused ? theme.accent : active ? theme.kapi : on ? theme.text : theme.subtle} inverse={focused} wrap="truncate">
+                  {m.deployment}
                 </Text>
               </Box>
-              {showDeployment && (
-                <Box width={22}>
-                  <Text color={focused ? theme.text : theme.dim}>{m.deployment}</Text>
+              <Box width={11}>
+                <Text color={theme.tool} wrap="truncate">{m.provider}</Text>
+              </Box>
+              {/* apelido pra digitar (só quando difere do nome real) */}
+              {showNote && (
+                <Box width={11}>
+                  <Text color={theme.dim} wrap="truncate">{m.alias !== m.deployment ? `/${m.alias}` : ''}</Text>
                 </Box>
               )}
               {showPrice && (
                 <Box width={20}>
-                  <Text color={theme.subtle}>
-                    in ${m.inPrice} · out ${m.outPrice}
-                  </Text>
+                  <Text color={theme.subtle}>{priced ? `in $${m.inPrice} · out $${m.outPrice}` : '—'}</Text>
                 </Box>
               )}
-              {showNote && <Text color={theme.subtle}>{m.note}</Text>}
               {active && <Text color={theme.successBright}> ✓ atual</Text>}
             </Box>
           )

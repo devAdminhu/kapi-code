@@ -17,7 +17,7 @@ const AUTOCOMPACT_BUFFER = 13_000
 
 // ── itens que a UI renderiza no histórico ──
 export type ChatItem =
-  | { kind: 'user'; text: string }
+  | { kind: 'user'; text: string; images?: ImagePart[] }
   | { kind: 'assistant'; model: string; text: string; reasoning?: string; cost?: number }
   | { kind: 'tool'; name: string; preview: string; result: string; refused?: boolean; diff?: DiffLine[] }
   | { kind: 'system'; text: string; tone?: 'info' | 'error' | 'warn' }
@@ -365,7 +365,7 @@ export class Engine {
   }
 
   /** Processa uma mensagem do usuário de ponta a ponta. */
-  async send(userText: string, ev: EngineEvents, signal: AbortSignal, images?: ImagePart[]): Promise<void> {
+  async send(userText: string, ev: EngineEvents, signal: AbortSignal, images?: ImagePart[], skipUserPush = false): Promise<void> {
     // microcompact: limpa tool_results antigos ao passar de ~70% (barato, antes do total)
     const freed = this.microCompact()
     if (freed > 1000) {
@@ -382,7 +382,8 @@ export class Engine {
         })
       }
     }
-    ev.pushItem({ kind: 'user', text: images?.length ? `${userText} 🖼×${images.length}` : userText })
+    // se veio da fila, a linha do usuário já foi mostrada — só registra no histórico
+    if (!skipUserPush) ev.pushItem({ kind: 'user', text: userText, images })
     this.history.push({ role: 'user', content: userText, images: images?.length ? images : undefined })
     this.turnOutTokens = 0
     if (this.agentMode) await this.agentLoop(ev, signal)

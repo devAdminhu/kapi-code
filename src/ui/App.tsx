@@ -8,6 +8,7 @@ import { appendMemory, contextSummary } from '../context.js'
 import { loadSpend, type Spend } from '../spend.js'
 import { Engine, type ChatItem } from '../engine.js'
 import type { ImagePart } from '../api/types.js'
+import { refreshDynamicModels } from '../dynamicModels.js'
 import { StatusLine } from './Banner.js'
 import { Welcome } from './Welcome.js'
 import { MessageRow, type ReasoningMode } from './MessageRow.js'
@@ -82,7 +83,10 @@ export const App = ({ initialModel, agentMode, auto, continueSession }: Props) =
         setCtxTokens(0)
         push({ kind: 'system', text: '✅ plano aprovado — janela nova, construindo a partir do plano' })
       }
+      // igual ao Claude Code: ao aprovar, já emenda a construção sozinho
+      setTimeout(() => void run('Execute o plano aprovado agora, passo a passo, até concluir.'), 0)
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [engine, push],
   )
 
@@ -110,6 +114,14 @@ export const App = ({ initialModel, agentMode, auto, continueSession }: Props) =
   // stale-while-revalidate: aplica cache na hora, revalida e re-renderiza.
   useEffect(() => {
     void refreshCtxWindows(Date.now(), () => setCtxTick(t => t + 1)).then(() => setCtxTick(t => t + 1))
+  }, [])
+
+  // descoberta dinâmica: busca os melhores modelos dos providers conectados
+  // em background e registra os novos no catálogo (re-renderiza ao chegar).
+  useEffect(() => {
+    void refreshDynamicModels().then(n => {
+      if (n > 0) setCtxTick(t => t + 1)
+    })
   }, [])
 
   // no boot, mostra o que foi carregado no contexto (KAPI.md, memória)
@@ -194,7 +206,7 @@ export const App = ({ initialModel, agentMode, auto, continueSession }: Props) =
   })
 
   const run = useCallback(
-    async (text: string, images?: ImagePart[]) => {
+    async (text: string, images?: ImagePart[], fromQueue = false) => {
       const ctrl = new AbortController()
       abortRef.current = ctrl
       setBusy(true)
@@ -252,16 +264,16 @@ export const App = ({ initialModel, agentMode, auto, continueSession }: Props) =
               confirmRef.current = req
               setConfirmReq(req)
             }),
-        }, ctrl.signal, images)
+        }, ctrl.signal, images, fromQueue)
       } finally {
         setBusy(false)
         setStatus(null)
         setLive(null)
         setCtxTokens(engine.contextTokens())
         abortRef.current = null
-        // processa a próxima mensagem enfileirada (digitada durante o processamento)
+        // processa a próxima mensagem enfileirada (já mostrada como linha do usuário)
         const next = queueRef.current.shift()
-        if (next && !ctrl.signal.aborted) setTimeout(() => void run(next), 0)
+        if (next && !ctrl.signal.aborted) setTimeout(() => void run(next, undefined, true), 0)
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -346,7 +358,7 @@ export const App = ({ initialModel, agentMode, auto, continueSession }: Props) =
       // (imagens não vão pra fila — só no envio imediato)
       if (busy) {
         queueRef.current.push(text)
-        push({ kind: 'system', text: `⏳ na fila: ${text.length > 60 ? text.slice(0, 60) + '…' : text}` })
+        push({ kind: 'user', text }) // aparece já como tua linha, roda na vez dela (igual Claude)
         return
       }
       void run(text, images)

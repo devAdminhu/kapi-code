@@ -2,7 +2,8 @@
 # launcher do kapi code — roda o build (dist) ou cai pro tsx em dev
 KAPI_HOME="$HOME/kapi-code"
 if [ -f "$KAPI_HOME/dist/index.js" ]; then
-  exec node "$KAPI_HOME/dist/index.js" "$@"
+  # React/Ink em modo produção: render bem mais rápido, sem checagens de dev
+  exec env NODE_ENV=production node "$KAPI_HOME/dist/index.js" "$@"
 else
   exec npx --prefix "$KAPI_HOME" tsx "$KAPI_HOME/src/index.tsx" "$@"
 fi

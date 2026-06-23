@@ -82,7 +82,7 @@ export const InputBox = ({ onSubmit, busy, history, draft, onDraftUsed, onNotice
     if (key.ctrl && input === 'v') {
       const img = readClipboardImage()
       if (img) {
-        setImages(a => [...a, { dataUrl: img.dataUrl, mediaType: img.mediaType }])
+        setImages(a => [...a, { dataUrl: img.dataUrl, mediaType: img.mediaType, path: img.path }])
         const token = `[Image #${img.index}] `
         setText(value.slice(0, cursor) + token + value.slice(cursor), cursor + token.length)
       } else {
@@ -104,8 +104,8 @@ export const InputBox = ({ onSubmit, busy, history, draft, onDraftUsed, onNotice
       return
     }
 
-    // ── navegação do menu de slash ──
-    if (menuOpen && (key.upArrow || key.downArrow)) {
+    // ── navegação do menu de slash (não sequestra as setas se está no histórico) ──
+    if (menuOpen && histIdx.current < 0 && (key.upArrow || key.downArrow)) {
       setSel(s => {
         const n = matches.length
         return key.upArrow ? (s - 1 + n) % n : (s + 1) % n
@@ -115,8 +115,9 @@ export const InputBox = ({ onSubmit, busy, history, draft, onDraftUsed, onNotice
     if (menuOpen && key.tab) return complete()
     if (menuOpen && key.escape) return setText('', 0)
 
-    // ── histórico de mensagens com ↑/↓ (quando o menu não está aberto) ──
-    if (key.upArrow && !menuOpen) {
+    // ── histórico de mensagens com ↑/↓ (segue funcionando mesmo numa entrada
+    // que é slash comando — quando já estamos navegando o histórico) ──
+    if (key.upArrow && (histIdx.current >= 0 || !menuOpen)) {
       if (history.length === 0) return
       const ni = histIdx.current < 0 ? history.length - 1 : Math.max(0, histIdx.current - 1)
       histIdx.current = ni
@@ -125,7 +126,7 @@ export const InputBox = ({ onSubmit, busy, history, draft, onDraftUsed, onNotice
       setCursor(v.length)
       return
     }
-    if (key.downArrow && !menuOpen) {
+    if (key.downArrow && (histIdx.current >= 0 || !menuOpen)) {
       if (histIdx.current < 0) return
       const ni = histIdx.current + 1
       if (ni >= history.length) {
@@ -217,12 +218,12 @@ export const InputBox = ({ onSubmit, busy, history, draft, onDraftUsed, onNotice
         flexDirection="row"
       >
         <Text color={busy ? theme.warning : theme.kapi} bold>
-          {busy ? '⏳ ' : '❯ '}
+          {'❯ '}
         </Text>
         {showPlaceholder ? (
           <Text>
             <Text inverse> </Text>
-            <Text color={theme.subtle}>{busy ? ' digite a próxima (vai pra fila)…' : ` ${t('placeholder')}`}</Text>
+            <Text color={theme.subtle}>{` ${t('placeholder')}`}</Text>
           </Text>
         ) : (
           <Text>

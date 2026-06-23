@@ -488,8 +488,9 @@ export const runTool = async (name: string, args: Record<string, unknown>): Prom
         if (!hits.length) return '[nenhum resultado]'
         return hits
           .map((h, i) => {
-            const meta = [h.source, h.snippet].filter(Boolean).join(' · ')
-            return `${i + 1}. ${h.title}${meta ? `\n   ${meta}` : ''}\n   ${h.url}`
+            const snip = h.snippet ? (h.snippet.length > 160 ? `${h.snippet.slice(0, 160)}…` : h.snippet) : ''
+            const head = h.source ? `${h.title}  (${h.source})` : h.title
+            return `${i + 1}. ${head}${snip ? `\n   ${snip}` : ''}\n   ${h.url}`
           })
           .join('\n\n')
       }

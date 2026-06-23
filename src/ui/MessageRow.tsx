@@ -1,5 +1,12 @@
+import { memo, Fragment } from 'react'
 import { Box, Text } from 'ink'
 import { theme } from '../theme.js'
+import { resolve } from 'node:path'
+import { link, fileUrl } from '../osc8.js'
+import type { ImagePart } from '../api/types.js'
+
+// tools cujo preview é um caminho de arquivo (vira hyperlink no terminal)
+const FILE_TOOLS = new Set(['ler_arquivo', 'editar_arquivo', 'editar_varios', 'escrever_arquivo'])
 import { TOOL_ICON } from '../tools.js'
 import type { ChatItem } from '../engine.js'
 import type { DiffLine } from '../diff.js'
@@ -101,7 +108,21 @@ const Row = ({ mark, color, children }: { mark: string; color: string; children:
   </Box>
 )
 
-export const MessageRow = ({
+// troca os tokens [Image #N] por hyperlinks OSC 8 pro arquivo em cache (tooltip
+// + clicável no terminal). Os tokens aparecem na ordem das imagens anexadas.
+const linkifyImages = (text: string, images?: ImagePart[]): React.ReactNode => {
+  if (!images?.length || !text.includes('[Image #')) return text
+  let k = 0
+  return text.split(/(\[Image #\d+\])/g).map((part, i) => {
+    if (/^\[Image #\d+\]$/.test(part)) {
+      const img = images[k++]
+      if (img?.path) return <Text key={i} color={theme.tool}>{link(part, fileUrl(img.path))}</Text>
+    }
+    return <Fragment key={i}>{part}</Fragment>
+  })
+}
+
+const MessageRowImpl = ({
   item,
   reasoningMode = 'short',
 }: {
@@ -112,7 +133,7 @@ export const MessageRow = ({
     case 'user':
       return (
         <Row mark="❯" color={theme.subtle}>
-          <Text color={theme.dim}>{item.text}</Text>
+          <Text color={theme.dim}>{linkifyImages(item.text, item.images)}</Text>
         </Row>
       )
 
@@ -138,6 +159,9 @@ export const MessageRow = ({
     case 'tool': {
       const icon = TOOL_ICON[item.name] ?? '•'
       const result = truncate(item.result.replace(/\n+/g, ' ').trim(), 300)
+      const previewLabel = truncate(item.preview, 120)
+      // tools de arquivo: o preview é um caminho → vira hyperlink (tooltip + clicável)
+      const isFileTool = FILE_TOOLS.has(item.name) && /[\w./-]/.test(item.preview)
       return (
         <Box flexDirection="column" marginBottom={1}>
           <Box>
@@ -147,7 +171,7 @@ export const MessageRow = ({
             <Text color={theme.tool} bold>
               {icon} {item.name}
             </Text>
-            <Text color={theme.dim}> {truncate(item.preview, 120)}</Text>
+            <Text color={theme.dim}> {isFileTool ? link(previewLabel, fileUrl(resolve(item.preview))) : previewLabel}</Text>
           </Box>
           {item.diff && item.diff.length > 0 ? (
             <DiffView diff={item.diff} />
@@ -204,3 +228,6 @@ export const MessageRow = ({
       )
   }
 }
+
+// memo: o histórico (Static) e a linha viva não re-reconciliam sem mudança de props
+export const MessageRow = memo(MessageRowImpl)

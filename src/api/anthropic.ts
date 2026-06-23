@@ -31,6 +31,11 @@ type AnthMsg = { role: 'user' | 'assistant'; content: Block[] }
 // OpenAI ChatMessage[] → { system, messages } da Anthropic.
 // system vira string no topo; tool_calls/tool viram content blocks; mensagens
 // consecutivas de mesmo papel-resultante são fundidas (Anthropic alterna papéis).
+// Anthropic exige tool_use.id no padrão ^[a-zA-Z0-9_-]+$. IDs gerados por
+// outros providers (ex: com '.') dão HTTP 400 — sanitiza determinístico pros
+// dois lados (tool_use e tool_result) continuarem casando.
+const sanitizeId = (id: string): string => id.replace(/[^a-zA-Z0-9_-]/g, '_') || 'tool_0'
+
 const convert = (messages: ChatMessage[]): { system: string; msgs: AnthMsg[] } => {
   const systemParts: string[] = []
   const msgs: AnthMsg[] = []
@@ -60,12 +65,12 @@ const convert = (messages: ChatMessage[]): { system: string; msgs: AnthMsg[] } =
         } catch {
           input = {}
         }
-        blocks.push({ type: 'tool_use', id: tc.id, name: tc.function.name, input })
+        blocks.push({ type: 'tool_use', id: sanitizeId(tc.id), name: tc.function.name, input })
       }
       if (blocks.length) push('assistant', blocks)
     } else {
       // role 'tool' → tool_result dentro de uma mensagem user
-      push('user', [{ type: 'tool_result', tool_use_id: m.tool_call_id, content: m.content }])
+      push('user', [{ type: 'tool_result', tool_use_id: sanitizeId(m.tool_call_id), content: m.content }])
     }
   }
   return { system: systemParts.join('\n\n'), msgs }

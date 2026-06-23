@@ -147,32 +147,76 @@ const tag = (xml: string, name: string): string => {
   return decodeEntities(v.replace(/<[^>]+>/g, '').trim())
 }
 
+const hostOf = (u: string): string => {
+  try {
+    return new URL(u).hostname.replace(/^www\./, '')
+  } catch {
+    return ''
+  }
+}
+
+// DDG embrulha o link em /l/?uddg=<url-encoded> — desembrulha pro link limpo.
+const unwrapDdg = (href: string): string => {
+  const m = href.match(/[?&]uddg=([^&]+)/)
+  if (m?.[1]) {
+    try {
+      return decodeURIComponent(m[1])
+    } catch {
+      /* mantém o original */
+    }
+  }
+  return href.startsWith('//') ? `https:${href}` : href
+}
+
+// Notícias (Google News RSS) — fallback e bom pra "últimas notícias sobre X".
+const newsSearch = async (query: string, limit: number, signal: AbortSignal): Promise<SearchHit[]> => {
+  const url =
+    'https://news.google.com/rss/search?' +
+    new URLSearchParams({ q: query, hl: 'pt-BR', gl: 'BR', ceid: 'BR:pt-419' }).toString()
+  const res = await fetch(url, { headers: { 'User-Agent': UA }, signal })
+  const xml = await res.text()
+  const hits: SearchHit[] = []
+  for (const raw of xml.split(/<item>/i).slice(1)) {
+    if (hits.length >= limit) break
+    const item = raw.split(/<\/item>/i)[0] ?? ''
+    const title = tag(item, 'title')
+    const link = tag(item, 'link')
+    if (title && link) hits.push({ title, url: link, snippet: tag(item, 'pubDate'), source: tag(item, 'source') })
+  }
+  return hits
+}
+
 /**
- * Busca via Google News RSS. Retorna manchetes recentes com link e fonte.
- * Funciona pra "últimas notícias sobre X" e buscas gerais por tópico.
+ * Busca web via DuckDuckGo (HTML), com URL/título/snippet limpos. Cai pro
+ * Google News RSS se o DDG vier vazio (bot-block etc.).
  */
 export const webSearch = async (query: string, limit = 8): Promise<SearchHit[]> => {
   const ctrl = new AbortController()
   const t = setTimeout(() => ctrl.abort(), 20_000)
   try {
-    const url =
-      'https://news.google.com/rss/search?' +
-      new URLSearchParams({ q: query, hl: 'pt-BR', gl: 'BR', ceid: 'BR:pt-419' }).toString()
-    const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: ctrl.signal })
-    const xml = await res.text()
+    const res = await fetch('https://html.duckduckgo.com/html/', {
+      method: 'POST',
+      headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ q: query, kl: 'br-pt' }).toString(),
+      signal: ctrl.signal,
+    })
+    const html = await res.text()
 
     const hits: SearchHit[] = []
-    const items = xml.split(/<item>/i).slice(1)
-    for (const raw of items) {
-      if (hits.length >= limit) break
-      const item = raw.split(/<\/item>/i)[0] ?? ''
-      const title = tag(item, 'title')
-      const link = tag(item, 'link')
-      const source = tag(item, 'source')
-      const pubDate = tag(item, 'pubDate')
-      if (title && link) hits.push({ title, url: link, snippet: pubDate, source })
+    // cada resultado: <a class="result__a" href="...">título</a> + result__snippet
+    const re =
+      /<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?(?:<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>)?/gi
+    let m: RegExpExecArray | null
+    while ((m = re.exec(html)) && hits.length < limit) {
+      const url = unwrapDdg(m[1] ?? '')
+      const title = decodeEntities((m[2] ?? '').replace(/<[^>]+>/g, '').trim())
+      const snippet = decodeEntities((m[3] ?? '').replace(/<[^>]+>/g, '').trim())
+      if (title && url.startsWith('http')) hits.push({ title, url, snippet, source: hostOf(url) })
     }
-    return hits
+    if (hits.length) return hits
+    return await newsSearch(query, limit, ctrl.signal)
+  } catch {
+    return await newsSearch(query, limit, ctrl.signal).catch(() => [])
   } finally {
     clearTimeout(t)
   }

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Box, Text } from 'ink'
-import figlet from 'figlet'
 import { theme } from '../theme.js'
 import { aliasOf, infoOf, providerIdOf } from '../models.js'
 import { useTermSize } from './useTermSize.js'
@@ -21,22 +20,13 @@ const mix = (t: number): string => {
   return `rgb(${r},${g},${b})`
 }
 
-// logo gerado pela lib figlet (fonte Small, compacta e legível), com fallback
-const LOGO: string[] = (() => {
-  try {
-    return figlet
-      .textSync('KAPI', { font: 'Small' })
-      .split('\n')
-      .filter(l => l.length > 0)
-  } catch {
-    return [
-      '  _  __   _   ___ ___ ',
-      ' | |/ /  /_\\ | _ \\_ _|',
-      " | ' <  / _ \\|  _/| | ",
-      ' |_|\\_\\/_/ \\_\\_| |___|',
-    ]
-  }
-})()
+// logo KAPI estático (sem figlet — economiza ~lib pesada + fontes no boot)
+const LOGO: string[] = [
+  '  _  __   _   ___ ___ ',
+  ' | |/ /  /_\\ | _ \\_ _|',
+  " | ' <  / _ \\|  _/| | ",
+  ' |_|\\_\\/_/ \\_\\_| |___|',
+]
 
 export const KAPI_LOGO = LOGO
 

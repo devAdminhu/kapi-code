@@ -8,7 +8,7 @@ export type ToolCall = {
 
 // imagem anexada a uma mensagem do usuário (paste do clipboard).
 // dataUrl no formato data:image/png;base64,XXXX — serve pros dois wires.
-export type ImagePart = { dataUrl: string; mediaType: string }
+export type ImagePart = { dataUrl: string; mediaType: string; path?: string }
 
 export type ChatMessage =
   | { role: 'system'; content: string }
