@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "titulo": "Refatorar módulo de autenticação",
+    "descricao": "Separar lógica de JWT em serviço dedicado e adicionar refresh tokens",
+    "status": "pendente",
+    "prioridade": "alta"
+  },
+  {
+    "id": 2,
+    "titulo": "Migrar banco SQLite para PostgreSQL",
+    "descricao": "Criar scripts de migration e atualizar variáveis de ambiente",
+    "status": "pendente",
+    "prioridade": "alta"
+  },
+  {
+    "id": 3,
+    "titulo": "Implementar cache Redis para sessões",
+    "descricao": "Adicionar camada de cache para reduzir latência de validação de tokens",
+    "status": "pendente",
+    "prioridade": "média"
+  },
+  {
+    "id": 4,
+    "titulo": "Escrever testes E2E para fluxo de checkout",
+    "descricao": "Cobrir cenários de sucesso, falha de pagamento e timeout",
+    "status": "pendente",
+    "prioridade": "média"
+  },
+  {
+    "id": 5,
+    "titulo": "Atualizar documentação da API",
+    "descricao": "Sincronizar OpenAPI/Swagger com os novos endpoints de v2",
+    "status": "pendente",
+    "prioridade": "baixa"
+  },
+  {
+    "id": 6,
+    "titulo": "Configurar CI/CD no GitHub Actions",
+    "descricao": "Pipeline de lint, testes, build e deploy para staging",
+    "status": "pendente",
+    "prioridade": "média"
+  },
+  {
+    "id": 7,
+    "titulo": "Otimizar queries N+1 no dashboard",
+    "descricao": "Revisar relacionamentos e aplicar eager loading onde necessário",
+    "status": "pendente",
+    "prioridade": "alta"
+  },
+  {
+    "id": 8,
+    "titulo": "Adicionar rate limiting por IP",
+    "descricao": "Proteger endpoints públicos contra brute force e scraping",
+    "status": "pendente",
+    "prioridade": "média"
+  }
+]
