@@ -14,24 +14,23 @@ contexto, memória persistente, paste de imagem (Ctrl+V) e menção de arquivo c
 ██   ██ ██   ██ ██      ██
 ```
 
-## Rodar
+## Instalar
 
 ```bash
-npm install
-npm run dev          # abre a TUI
-# ou, depois de instalado (ver abaixo):
+npm install -g kapi-code
 kapi
 ```
 
-A chave da Azure vem da env var `KAPI_API_KEY` ou de `~/kapi-code/.azure-ref.env`
-(gitignored). Veja `.env.example`. Outros providers conectam via `/login`.
+Conecte um provider com `/login` (API key ou OAuth). A Azure também lê de
+`KAPI_API_KEY` ou `~/kapi-code/.azure-ref.env` (gitignored). Veja `.env.example`.
 
-## Instalar como comando
+## Desenvolvimento
 
 ```bash
-npm run build
-ln -sf ~/kapi-code/bin/kapi ~/.local/bin/kapi   # 'kapi' no PATH
-kapi --help
+npm install
+npm run dev          # TUI a partir do source (tsx)
+npm run build        # compila pra dist/
+npm run release      # build + bump + publish + push
 ```
 
 ## Recursos
@@ -117,14 +116,6 @@ kapi -p --chat "oi"                    # sem ferramentas
 | gemini / gemini-pro | gemini-3-flash / 2.5-pro | google | 0.50 / 1.25 | 3.00 / 10.00 |
 
 Conexão por provider via `/login`. Imagem (Ctrl+V) só em modelos com visão.
-
-## Build
-
-```bash
-npm run typecheck
-npm run build
-npm start
-```
 
 ---
 
